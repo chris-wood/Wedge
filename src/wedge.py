@@ -10,6 +10,7 @@
 import hashlib # ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
 import crypt # crypt(3)
 import sys # for command-line arguments and file I/O 
+import wedge_dictionary
 
 #easyRange = [32,33,36,42,43] + range(48, 58) + range(65, 91) + range(97, 123)
 #allRange = range(32,127)
@@ -91,93 +92,6 @@ def read_password():
     print("")
     password = raw_input("Enter a password: ")
     return password
-
-def generateHash(password, format):
-    ''' TODO
-
-    ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
-    '''
-
-    digest = ""
-
-    if (format == "crypt"):
-        pass
-    elif (format == "md5"):
-        h = hashlib.md5()
-        h.update(password)
-        digest = h.digest()
-    elif (format == "sha1"):
-        h = hashlib.sha1()
-        h.update(password)
-        digest = h.digest()
-    elif (format == "sha256"):
-        h = hashlib.sha256()
-        h.update(password)
-        digest = h.digest()
-    elif (format == "sha512"):
-        h = hashlib.sha512()
-        h.update(password)
-        digest = h.digest()
-    else:
-        raise Exception("Invalid hash format")
-
-    return digest
-
-def compare_password_hashes(word, password, format):
-    ''' TODO
-    '''
-
-    match = False
-
-    if (format == "crypt"):
-        pass
-    elif (format == "md5"):
-        h = hashlib.md5()
-        h.update(word)
-        if (h.digest() == password):
-            match = True
-    elif (format == "sha1"):
-        h = hashlib.sha1()
-        h.update(word)
-        if (h.digest() == password):
-            match = True
-    elif (format == "sha256"):
-        h = hashlib.sha256()
-        h.update(word)
-        if (h.digest() == password):
-            match = True
-    elif (format == "sha512"):
-        h = hashlib.sha512()
-        h.update(word)
-        if (h.digest() == password):
-            match = True
-    else:
-        raise Exception("Invalid hash format")
-
-    return match
-
-def crack_password(format, password):
-    ''' TODO
-
-    ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
-    '''
-    global DICTIONARY
-    cracked = False
-    try:
-        with open(DICTIONARY) as f: 
-            for word in f.readlines():
-
-                # TODO: candidate mangling goes here
-
-                if (compare_password_hashes(word.rstrip('\n'), password, format)):
-                    print("Password found: " + word.rstrip('\n'))
-                    cracked = True
-                    return cracked
-        if (cracked == False):
-            print("Password crack was unsuccessful.")
-                
-    except:
-        raise Exception("Error occurred while cracking password")
 
 def main():
     ''' The main method to parse command-line arguments and start the password cracking logic
