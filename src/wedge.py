@@ -146,14 +146,21 @@ def main():
                 password = read_password()
                 h.update(password)
                 digest = h.digest()
-                print("Hashed password") 
+                print("Hashed password:") 
                 print(digest)
                 
                 # Start the attack thread
-                print("Spawning the attack thread...")
+                print("Spawning the dictionary attack thread.")
                 attack = DictionaryAttack.DictionaryAttack(digest, hashFormat, dictionary)
-                print("asd")
                 attack.start()
+                attack.join()
+
+                # Check the result
+                cracked, password = attack.get_result()
+                if (cracked == True):
+                    print("Password cracked: " + str(password))
+                else:
+                    print("going brute force...")
 
                 #crack_password(hashFormat, digest)
         except IOError as e:

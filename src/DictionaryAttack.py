@@ -5,23 +5,44 @@ import crypt # crypt(3)
 import sys # for command-line arguments and file I/O 
 
 class DictionaryAttack(threading.Thread):
-    def __init__(self, password, format, dictionary):
-        ''' Constructor - save the hash function type and wordlist reference
+    def __init__(self, digest, format, dictionary):
+        ''' Constructor - save the password, hash function, and wordlist reference
         '''
         # Call the thread constructor
         threading.Thread.__init__(self)
 
         # Save the variables
-        self.password = password
+        self.digest = digest
         self.format = format
         self.dictionary = dictionary
+        self.cracked = False
+        self.password = None
 
-    def compare_password_hashes(self, hashFunction, word):
+    def get_result(self):
+        return self.cracked, self.password
+
+    def compare_password_hashes(self, word):
         ''' Compare the digest of the specified word against the password digest.
         '''
         match = False
-        hashFunction.update(word)
-        if (hashFunction.digest() == self.password):
+
+        # Determine the hash function type
+        # NOTE: this had to be done in local scope to produce the correct hash digest.
+        h = hashlib.md5()
+        if (self.format == "crypt"):
+            pass # defaults to md5
+        elif (self.format == "md5"):
+            h = hashlib.md5()
+        elif (self.format == "sha1"):
+            h = hashlib.sha1()
+        elif (self.format == "sha256"):
+            h = hashlib.sha256()
+        elif (self.format == "sha512"):
+            h = hashlib.sha512()
+
+        # Perform the computation and comparison
+        h.update(word)
+        if (h.digest() == self.digest):
             match = True
         return match
 
@@ -31,23 +52,7 @@ class DictionaryAttack(threading.Thread):
         
         The supported hash functions are: md5, sha1, sha225, sha256, sha384, sha512, crypt
         '''
-        cracked = False
-
-        # Determine the hash function type
-        hashFunction = hashlib.md5()
-        if (self.format == "crypt"):
-            pass # defaults to md5
-        elif (self.format == "md5"):
-            hashFunction = hashlib.md5()
-        elif (self.format == "sha1"):
-            hashFunction = hashlib.sha1()
-        elif (self.format == "sha256"):
-            hashFunction = hashlib.sha256()
-        elif (self.format == "sha512"):
-            hashFunction = hashlib.sha512()
-        else:
-            raise Exception("Invalid hash format")
-
+        self.cracked = False
         try:
             # Proceed with the attack...
             with open(self.dictionary) as f: 
@@ -55,14 +60,15 @@ class DictionaryAttack(threading.Thread):
 
                     # TODO: candidate mangling goes here, if I choose to implement it
 
-                    if (self.compare_password_hashes(hashFunction, word.rstrip('\n'))):
-                        print("Password found: " + word.rstrip('\n'))
-                        cracked = True
-                        return cracked # early return to avoid wasted cycles
+                    if (self.compare_password_hashes(word.rstrip('\n'))):
+                        self.password = word.rstrip('\n')
+                        self.cracked = True
+                        return self.cracked # early return to avoid wasted cycles
             if (cracked == False):
                 print("Password crack was unsuccessful.")
-        except:
+        except Exception as e:
+            print(e)
             raise Exception("Error occurred while cracking password")
 
         # Return the result...
-        return cracked
+        return self.cracked
