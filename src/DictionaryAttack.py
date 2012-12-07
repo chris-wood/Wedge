@@ -1,93 +1,68 @@
 # TODO
 import threading
+import hashlib # ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
+import crypt # crypt(3)
+import sys # for command-line arguments and file I/O 
 
 class DictionaryAttack(threading.Thread):
+    def __init__(self, password, format, dictionary):
+        ''' Constructor - save the hash function type and wordlist reference
+        '''
+        # Call the thread constructor
+        threading.Thread.__init__(self)
 
-# TODO: make these class methods and then update the Wedge.py file to make it work
+        # Save the variables
+        self.password = password
+        self.format = format
+        self.dictionary = dictionary
 
-def generateHash(password, format):
-    ''' TODO
-
-    ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
-    '''
-
-    digest = ""
-
-    if (format == "crypt"):
-        pass
-    elif (format == "md5"):
-        h = hashlib.md5()
-        h.update(password)
-        digest = h.digest()
-    elif (format == "sha1"):
-        h = hashlib.sha1()
-        h.update(password)
-        digest = h.digest()
-    elif (format == "sha256"):
-        h = hashlib.sha256()
-        h.update(password)
-        digest = h.digest()
-    elif (format == "sha512"):
-        h = hashlib.sha512()
-        h.update(password)
-        digest = h.digest()
-    else:
-        raise Exception("Invalid hash format")
-
-    return digest
-
-def compare_password_hashes(word, password, format):
-    ''' TODO
-    '''
-
-    match = False
-
-    if (format == "crypt"):
-        pass
-    elif (format == "md5"):
-        h = hashlib.md5()
-        h.update(word)
-        if (h.digest() == password):
+    def compare_password_hashes(self, hashFunction, word):
+        ''' Compare the digest of the specified word against the password digest.
+        '''
+        match = False
+        hashFunction.update(word)
+        if (hashFunction.digest() == self.password):
             match = True
-    elif (format == "sha1"):
-        h = hashlib.sha1()
-        h.update(word)
-        if (h.digest() == password):
-            match = True
-    elif (format == "sha256"):
-        h = hashlib.sha256()
-        h.update(word)
-        if (h.digest() == password):
-            match = True
-    elif (format == "sha512"):
-        h = hashlib.sha512()
-        h.update(word)
-        if (h.digest() == password):
-            match = True
-    else:
-        raise Exception("Invalid hash format")
+        return match
 
-    return match
+    def run(self):
+        ''' Attempt to crack the password using the dictionary attack, which
+        walks the wordlist in search of a comparable password hash digest.
+        
+        The supported hash functions are: md5, sha1, sha225, sha256, sha384, sha512, crypt
+        '''
+        cracked = False
 
-def crack_password(format, password):
-    ''' TODO
+        # Determine the hash function type
+        hashFunction = hashlib.md5()
+        if (self.format == "crypt"):
+            pass # defaults to md5
+        elif (self.format == "md5"):
+            hashFunction = hashlib.md5()
+        elif (self.format == "sha1"):
+            hashFunction = hashlib.sha1()
+        elif (self.format == "sha256"):
+            hashFunction = hashlib.sha256()
+        elif (self.format == "sha512"):
+            hashFunction = hashlib.sha512()
+        else:
+            raise Exception("Invalid hash format")
 
-    ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
-    '''
-    global DICTIONARY
-    cracked = False
-    try:
-        with open(DICTIONARY) as f: 
-            for word in f.readlines():
+        try:
+            # Proceed with the attack...
+            with open(self.dictionary) as f: 
+                for word in f.readlines():
 
-                # TODO: candidate mangling goes here
+                    # TODO: candidate mangling goes here, if I choose to implement it
 
-                if (compare_password_hashes(word.rstrip('\n'), password, format)):
-                    print("Password found: " + word.rstrip('\n'))
-                    cracked = True
-                    return cracked
-        if (cracked == False):
-            print("Password crack was unsuccessful.")
-                
-    except:
-        raise Exception("Error occurred while cracking password")
+                    if (self.compare_password_hashes(hashFunction, word.rstrip('\n'))):
+                        print("Password found: " + word.rstrip('\n'))
+                        cracked = True
+                        return cracked # early return to avoid wasted cycles
+            if (cracked == False):
+                print("Password crack was unsuccessful.")
+        except:
+            raise Exception("Error occurred while cracking password")
+
+        # Return the result...
+        return cracked

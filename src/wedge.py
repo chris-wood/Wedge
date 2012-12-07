@@ -10,7 +10,7 @@
 import hashlib # ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
 import crypt # crypt(3)
 import sys # for command-line arguments and file I/O 
-import wedge_dictionary
+import DictionaryAttack
 
 #easyRange = [32,33,36,42,43] + range(48, 58) + range(65, 91) + range(97, 123)
 #allRange = range(32,127)
@@ -23,7 +23,7 @@ targetUser = ""
 hashFormat = "md5"
 
 # The hard-coded dictionary (that can be changed)
-DICTIONARY = "cain.txt"
+dictionary = "cain.txt"
 
 #def checkPassword(password):
 #    m = md5.new(password)
@@ -62,12 +62,12 @@ def print_params():
     global hashFile
     global targetUser
     global hashFormat
-    global DICTIONARY
+    global dictionary
     print("Wedge parameters:")
     print("  hash file = " + str(hashFile))
     print("  user = " + str(targetUser))
     print("  format = " + str(hashFormat))
-    print("  dictionary = " + str(DICTIONARY))
+    print("  dictionary = " + str(dictionary))
 
 #TODO: split into print_banner and print_usage...
 
@@ -100,6 +100,7 @@ def main():
     global hashFile
     global hashFormat
     global targetUser
+    global dictionary
 
     # Banner...
     print_banner()
@@ -120,8 +121,22 @@ def main():
         elif (len(args) > 4):
             raise Exception("Invalid number of command-line parameters")
 
+        # Determine the hash function to use
+        h = hashlib.md5()
+        if (hashFormat == "crypt"):
+            pass # defaults to md5
+        elif (hashFormat == "md5"):
+            h = hashlib.md5()
+        elif (hashFormat == "sha1"):
+            h = hashlib.sha1()
+        elif (hashFormat == "sha256"):
+            h = hashlib.sha256()
+        elif (hashFormat == "sha512"):
+            h = hashlib.sha512()
+
         # Display the cracking options
         print_params()
+        print("################################")
         try:
             if (len(hashFile) > 0):
                 with open(hashFile) as f: 
@@ -129,9 +144,18 @@ def main():
                     # TODO: read from the file and then execute the crack_password for each line
             else:
                 password = read_password()
-                digest = generateHash(password, hashFormat)
-                print("Hashed password: " + str(digest))
-                crack_password(hashFormat, digest)
+                h.update(password)
+                digest = h.digest()
+                print("Hashed password") 
+                print(digest)
+                
+                # Start the attack thread
+                print("Spawning the attack thread...")
+                attack = DictionaryAttack.DictionaryAttack(digest, hashFormat, dictionary)
+                print("asd")
+                attack.start()
+
+                #crack_password(hashFormat, digest)
         except IOError as e:
             raise Exception("File (" + str(hashFile) + ") as does not exist.")
 
