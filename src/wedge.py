@@ -1,6 +1,6 @@
 ################################################################
 #
-# File: wedge.py
+# File: Wedge.py
 # Author: Christopher A. Wood, caw4567@rit.edu
 # Version: 12/4/12
 #
@@ -10,34 +10,20 @@
 import hashlib # ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
 import crypt # crypt(3)
 import sys # for command-line arguments and file I/O 
+import time # for time measurements
 import DictionaryAttack
-
-#easyRange = [32,33,36,42,43] + range(48, 58) + range(65, 91) + range(97, 123)
-#allRange = range(32,127)
-#hash = "<16 hex pairs here>"
-#salt = "<salt>"
+import BruteForceAttack
 
 # Wedge parameters
 hashFile = ""
 targetUser = ""
 hashFormat = "md5"
 
+# Brute force character classes to try
+alphaSet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+
 # The hard-coded dictionary (that can be changed)
 dictionary = "cain.txt"
-
-#def checkPassword(password):
-#    m = md5.new(password)
-#    m = md5.new(m.hexdigest() + salt)
-#    if (m.hexdigest() == hash):
-#        print "match [" + password + "]"
-#        sys.exit()
-
-#def recurse(width, position, baseString):
-    # current position
-    #for char in easyRange:
-    #    if (position < width - 1):
-    #        recurse(width, position + 1, baseString + "%c" % char)
-    #    checkPassword(baseString + "%c" % char)
 
 def print_banner():
     ''' Simply print the banner for Wedge.
@@ -69,8 +55,6 @@ def print_params():
     print("  format = " + str(hashFormat))
     print("  dictionary = " + str(dictionary))
 
-#TODO: split into print_banner and print_usage...
-
 def parse_commandline_string(param):
     ''' TODO
     '''
@@ -92,6 +76,12 @@ def read_password():
     print("")
     password = raw_input("Enter a password: ")
     return password
+
+def timestampMilli(msg, start, end):
+    print(msg + str((end - start) * 1000) + "ms")
+
+def timestampSec(msg, start, end):
+    print(msg + str((end - start)) + "s")
 
 def main():
     ''' The main method to parse command-line arguments and start the password cracking logic
@@ -152,15 +142,29 @@ def main():
                 # Start the attack thread
                 print("Spawning the dictionary attack thread.")
                 attack = DictionaryAttack.DictionaryAttack(digest, hashFormat, dictionary)
+                start = time.time()
                 attack.start()
                 attack.join()
 
                 # Check the result
                 cracked, password = attack.get_result()
                 if (cracked == True):
+                    end = time.time()
                     print("Password cracked: " + str(password))
+                    timestampSec("Elapsed time: ", start, end)
                 else:
-                    print("going brute force...")
+                    print("Spawning the brute force attack thread.")
+                    global alphaSet
+                    attack = BruteForceAttack.BruteForceAttack(digest, hashFormat, alphaSet, 1)
+                    attack.start()
+                    attack.join()
+                    cracked, password = attack.get_result()
+                    if (cracked == True):
+                        end = time.time()
+                        print("Password cracked: " + str(password))
+                        timestampSec("Elapsed time: ", start, end)
+                    else:
+                        print("Brute force failed. We give up.")
 
                 #crack_password(hashFormat, digest)
         except IOError as e:
