@@ -48,7 +48,7 @@ class BruteForceAttack(threading.Thread):
         # NOTE: this had to be done in local scope to produce the correct hash digest.
         h = hashlib.md5()
         if (self.format == "crypt"):
-            pass # defaults to md5
+            pass # defaults to md5 because we aren't handling salted passwords yet
         elif (self.format == "md5"):
             h = hashlib.md5()
         elif (self.format == "sha1"):

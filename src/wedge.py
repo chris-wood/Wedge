@@ -17,10 +17,13 @@ import BruteForceAttack
 # Wedge parameters
 hashFile = ""
 targetUser = ""
-hashFormat = "md5"
+hashFormat = "md5" # by default
 
-# Brute force character classes to try
+# Brute force character classes to try (not exhaustive, just the ones on the normal QWERTY keyboard)
 alphaSet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+numSet = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+specialSet = ['!', '@', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '`', '~', ',', '<', '.', '>', ':', ';', '/', '?', '\'', '"', '[', '{', ']', '}', '\\', '|']
+characterSet = alphaSet # by default
 
 # The hard-coded dictionary (that can be changed)
 dictionary = "cain.txt"
@@ -40,47 +43,68 @@ def print_usage():
     print("  -h=FILE - the password hash file")
     print("  -f=FORMAT - the format to use for obfuscation (crypt/md5 supported)")
     print("  -u=USER - the user to target in the password file")
+    print("  -i=CHARSET - the character set to use: alpha, alnum, num, special, all")
     #print("  -d=DICT - the wordlist/dictionary to use in the dictionary attack")
 
 def print_params():
-    ''' TODO
+    ''' Print out the supported commands.
     '''
     global hashFile
     global targetUser
     global hashFormat
     global dictionary
+    global characterSet
+
     print("Wedge parameters:")
     print("  hash file = " + str(hashFile))
     print("  user = " + str(targetUser))
     print("  format = " + str(hashFormat))
     print("  dictionary = " + str(dictionary))
+    print("  character set = " + str(characterSet))
 
 def parse_commandline_string(param):
-    ''' TODO
+    ''' Parse a command-line argument and set one of the global variables
     '''
     global hashFile
     global hashFormat
     global targetUser
+    global characterSet
+
     if ("-h=" in param):
         hashFile = param[3:]
     elif ("-f=" in param):
         hashFormat = param[3:]
     elif ("-u=" in param):
         targetUser = param[3:]
+    elif ("-i=" in param):
+        if ("alpha" in param[3:]):
+            characterSet = alphaSet
+        elif ("alnum" in param[3:]):
+            characterSet = alphaSet + numSet
+        elif ("num" in param[3:]):
+            characterSet = numSet
+        elif ("special" in param[3:]):
+            characterSet = specialSet
+        elif ("all" in param[3:]):
+            characterSet = alphaSet + numSet + specialSet
     else:
         raise Exception("Invalid command-line option: " + str(param))
 
 def read_password():
-    ''' TODO
+    ''' Read the password from the command-line.
     '''
     print("")
     password = raw_input("Enter a password: ")
     return password
 
 def timestampMilli(msg, start, end):
+    ''' Display the elapsed time in milliseconds.
+    '''
     print(msg + str((end - start) * 1000) + "ms")
 
 def timestampSec(msg, start, end):
+    ''' Display the elapsed time in seconds.
+    '''
     print(msg + str((end - start)) + "s")
 
 def main():
@@ -91,6 +115,7 @@ def main():
     global hashFormat
     global targetUser
     global dictionary
+    global characterSet
 
     # Banner...
     print_banner()
@@ -155,7 +180,7 @@ def main():
                 else:
                     print("Spawning the brute force attack thread.")
                     global alphaSet
-                    attack = BruteForceAttack.BruteForceAttack(digest, hashFormat, alphaSet, 1)
+                    attack = BruteForceAttack.BruteForceAttack(digest, hashFormat, characterSet, 1)
                     attack.start()
                     attack.join()
                     cracked, password = attack.get_result()
@@ -179,10 +204,3 @@ def main():
 # Wedge our way in...
 if (__name__ == '__main__'):
     main()
-    '''
-    print "Target Hash [" + hash + "] Salt [" + salt + "]"
-    maxChars = 13
-    for baseWidth in range(1, maxChars + 1):
-        print "checking passwords width [" + `baseWidth` + "]"
-        recurse(baseWidth, 0, "")
-    '''
