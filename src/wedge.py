@@ -15,7 +15,6 @@ import DictionaryAttack
 import BruteForceAttack
 
 # Wedge parameters
-hashFile = ""
 targetUser = ""
 hashFormat = "md5" # by default
 
@@ -39,24 +38,21 @@ def print_banner():
 def print_usage():
     ''' Simply print the usage message for Wedge.
     '''
-    print("Usage: python wedge.py file [OPTIONS]")
-    print("  -h=FILE - the password hash file")
+    print("Usage: python wedge.py [OPTIONS]")
     print("  -f=FORMAT - the format to use for obfuscation (crypt/md5 supported)")
     print("  -u=USER - the user to target in the password file")
     print("  -i=CHARSET - the character set to use: alpha, alnum, num, special, all")
-    #print("  -d=DICT - the wordlist/dictionary to use in the dictionary attack")
+    print("  -d=DICT - the wordlist/dictionary to use in the dictionary attack")
 
 def print_params():
     ''' Print out the supported commands.
     '''
-    global hashFile
     global targetUser
     global hashFormat
     global dictionary
     global characterSet
 
     print("Wedge parameters:")
-    print("  hash file = " + str(hashFile))
     print("  user = " + str(targetUser))
     print("  format = " + str(hashFormat))
     print("  dictionary = " + str(dictionary))
@@ -65,14 +61,12 @@ def print_params():
 def parse_commandline_string(param):
     ''' Parse a command-line argument and set one of the global variables
     '''
-    global hashFile
     global hashFormat
     global targetUser
     global characterSet
+    global dictionary
 
-    if ("-h=" in param):
-        hashFile = param[3:]
-    elif ("-f=" in param):
+    if ("-f=" in param):
         hashFormat = param[3:]
     elif ("-u=" in param):
         targetUser = param[3:]
@@ -87,6 +81,8 @@ def parse_commandline_string(param):
             characterSet = specialSet
         elif ("all" in param[3:]):
             characterSet = alphaSet + numSet + specialSet
+    elif ("-d=" in param):
+        dictionary = param[3:]
     else:
         raise Exception("Invalid command-line option: " + str(param))
 
@@ -111,7 +107,6 @@ def main():
     ''' The main method to parse command-line arguments and start the password cracking logic
     '''
     args = sys.argv
-    global hashFile
     global hashFormat
     global targetUser
     global dictionary
@@ -153,43 +148,38 @@ def main():
         print_params()
         print("################################")
         try:
-            if (len(hashFile) > 0):
-                with open(hashFile) as f: 
-                    pass
-                    # TODO: read from the file and then execute the crack_password for each line
+            password = read_password()
+            h.update(password)
+            digest = h.digest()
+            print("Hashed password:") 
+            print(digest)
+            
+            # Start the attack thread
+            print("Spawning the dictionary attack thread.")
+            attack = DictionaryAttack.DictionaryAttack(digest, hashFormat, dictionary)
+            start = time.time()
+            attack.start()
+            attack.join()
+
+            # Check the result
+            cracked, password = attack.get_result()
+            if (cracked == True):
+                end = time.time()
+                print("Password cracked: " + str(password))
+                timestampSec("Elapsed time: ", start, end)
             else:
-                password = read_password()
-                h.update(password)
-                digest = h.digest()
-                print("Hashed password:") 
-                print(digest)
-                
-                # Start the attack thread
-                print("Spawning the dictionary attack thread.")
-                attack = DictionaryAttack.DictionaryAttack(digest, hashFormat, dictionary)
-                start = time.time()
+                print("Spawning the brute force attack thread.")
+                global alphaSet
+                attack = BruteForceAttack.BruteForceAttack(digest, hashFormat, characterSet, 1)
                 attack.start()
                 attack.join()
-
-                # Check the result
                 cracked, password = attack.get_result()
                 if (cracked == True):
                     end = time.time()
                     print("Password cracked: " + str(password))
                     timestampSec("Elapsed time: ", start, end)
                 else:
-                    print("Spawning the brute force attack thread.")
-                    global alphaSet
-                    attack = BruteForceAttack.BruteForceAttack(digest, hashFormat, characterSet, 1)
-                    attack.start()
-                    attack.join()
-                    cracked, password = attack.get_result()
-                    if (cracked == True):
-                        end = time.time()
-                        print("Password cracked: " + str(password))
-                        timestampSec("Elapsed time: ", start, end)
-                    else:
-                        print("Brute force failed. We give up.")
+                    print("Brute force failed. We give up.")
 
                 #crack_password(hashFormat, digest)
         except IOError as e:
